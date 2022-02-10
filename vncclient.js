@@ -249,14 +249,26 @@ class VncClient extends Events {
             this._log('Sending 3.8', true);
             this.sendData(versionString.V3_008);
             this._version = '3.8';
-        } else {
+        } 
+        else if (this._socketBuffer.toString() === versionString.V3_889) {
+            this._log('Sending 3.889 (Apple Remote Desktop Variant)', true);
+            this.sendData(versionString.V3_889);
+            this._version = '3.889';
+        }
+        else {
             // Negotiating auth mechanism
             this._handshaked = true;
             if (this._socketBuffer.includes(0x02) && this._password) {
                 this._log('Password provided and server support VNC auth. Choosing VNC auth.', true);
                 this._expectingChallenge = true;
                 this.sendData(new Buffer.from([0x02]));
-            } else if (this._socketBuffer.includes(1)) {
+            }
+            else if (this._socketBuffer.includes(0x30) && this._password) {
+                this._log('Password provided and server support ARD VNC auth. Choosing ARD VNC auth.', true);
+                this._expectingChallenge = true;
+                this.sendData(new Buffer.from([0x30]));
+            }
+            else if (this._socketBuffer.includes(1)) {
                 this._log('Password not provided or server does not support VNC auth. Trying none.', true);
                 this.sendData(new Buffer.from([0x01]));
                 if (this._version === '3.7') {
@@ -265,7 +277,8 @@ class VncClient extends Events {
                     this._expectingChallenge = true;
                     this._challengeResponseSent = true;
                 }
-            } else {
+            } 
+            else {
                 this._log('Connection error. Msg: ' + this._socketBuffer.toString());
                 this.disconnect();
             }
